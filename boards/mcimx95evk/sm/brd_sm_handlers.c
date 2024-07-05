@@ -78,6 +78,7 @@ int32_t BRD_SM_SerialDevicesInit(void)
 {
     int32_t status = SM_ERR_SUCCESS;
     LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
+#if 0
     pcal6408a_config_t pcal6408Config;
 
     /* Fill in PCAL6408A dev */
@@ -98,6 +99,7 @@ int32_t BRD_SM_SerialDevicesInit(void)
             status = SM_ERR_HARDWARE_ERROR;
         }
     }
+#endif
 
     if (status == SM_ERR_SUCCESS)
     {
@@ -186,11 +188,12 @@ int32_t BRD_SM_SerialDevicesInit(void)
 void BRD_SM_Gpio1Handler(void)
 {
     uint32_t flags;
-    uint8_t status, val;
+    //uint8_t status, val;
 
     /* Get GPIO status */
     flags = RGPIO_GetPinsInterruptFlags(GPIO1, kRGPIO_InterruptOutput0);
 
+#if 0
     /* Get PCAL6408A status */
     PCAL6408A_IntStatusGet(&pcal6408aDev, &status);
 
@@ -215,6 +218,12 @@ void BRD_SM_Gpio1Handler(void)
     {
         BRD_SM_ControlHandler(status, val);
     }
+#else
+    /* Clear GPIO interrupts */
+    RGPIO_ClearPinsInterruptFlags(GPIO1, kRGPIO_InterruptOutput0, flags);
+
+    BRD_SM_Pf09Handler();
+#endif
 }
 
 /*==========================================================================*/
