@@ -43,6 +43,7 @@
 #include "dev_sm.h"
 #include "fsl_lpi2c.h"
 #include "fsl_rgpio.h"
+#include "pin_mux.h"
 
 /* Local defines */
 
@@ -89,6 +90,138 @@ uint32_t g_pmicFaultFlags = 0U;
 
 static void BRD_SM_Pf09Handler(void);
 
+#if (BOARD_I2C_INSTANCE == 1U)
+#define BOARD_I2C_RGPIO              GPIO1
+#define BOARD_I2C_SDA_RGPIO_PIN      1U
+#define BOARD_I2C_SCL_RGPIO_PIN      0U
+#elif (BOARD_I2C_INSTANCE == 2U)
+#define BOARD_I2C_RGPIO              GPIO1
+#define BOARD_I2C_SDA_RGPIO_PIN      3U
+#define BOARD_I2C_SCL_RGPIO_PIN      2U
+#endif
+
+void BOARD_I2C_Recovery(void)
+{
+    static LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
+    LPI2C_Type *base = s_i2cBases[BOARD_I2C_INSTANCE];
+    lpi2c_master_config_t lpi2cConfig = {0};
+    int i;
+    static uint32_t const s_i2cClks[] =
+    {
+        0U,
+        CLOCK_ROOT_LPI2C1,
+        CLOCK_ROOT_LPI2C2
+    };
+    uint32_t clockId = s_i2cClks[BOARD_I2C_INSTANCE];
+    uint32_t rate;
+
+    rgpio_pin_config_t output_config = {
+        kRGPIO_DigitalOutput,
+        0,
+    };
+    rgpio_pin_config_t input_config = {
+        kRGPIO_DigitalInput,
+        0,
+    };
+
+    LPI2C_MasterDeinit(base);
+
+#if (BOARD_I2C_INSTANCE == 1U)
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C1_SCL__GPIO1_IO_BIT0, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C1_SCL__GPIO1_IO_BIT0, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C1_SDA__GPIO1_IO_BIT1, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C1_SDA__GPIO1_IO_BIT1, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+#elif (BOARD_I2C_INSTANCE == 2U)
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C2_SCL__GPIO1_IO_BIT2, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C2_SCL__GPIO1_IO_BIT2, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C2_SDA__GPIO1_IO_BIT3, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C2_SDA__GPIO1_IO_BIT3, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+#endif
+
+    /* Set PCNS register value to 0x0 to prepare the RGPIO initialization */
+    BOARD_I2C_RGPIO->PCNS = 0x0;
+
+    /* SDA input */
+    RGPIO_PinInit(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, &input_config);
+
+    if ((RGPIO_PinRead(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN) & 0x1) == 0)
+    {
+        printf("BOARD_I2C_INSTANCE: SDA is low, start I2C recovery.\r\n");
+
+        RGPIO_PinInit(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, &output_config);
+		RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 1);
+		SystemTimeDelay(10000);
+
+        for (i = 0; i < 9; i++)
+        {
+            RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 1);
+            SystemTimeDelay(5);
+            RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 0);
+            SystemTimeDelay(5);
+        }
+
+        /* 9th clock here, the slave should already
+            release the SDA, we can set SDA as high to
+            a NAK.*/
+        RGPIO_PinInit(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, &output_config);
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, 1);
+        SystemTimeDelay(1); /* Pull up SDA first */
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 1);
+        SystemTimeDelay(5); /* plus pervious 1 us */
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 0);
+        SystemTimeDelay(5);
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, 0);
+        SystemTimeDelay(5);
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SCL_RGPIO_PIN, 1);
+        SystemTimeDelay(5);
+        /* Here: SCL is high, and SDA from low to high, it's a
+          * stop condition */
+        RGPIO_WritePinOutput(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, 1);
+        SystemTimeDelay(5);
+
+        RGPIO_PinInit(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN, &input_config);
+        if ((RGPIO_PinRead(BOARD_I2C_RGPIO, BOARD_I2C_SDA_RGPIO_PIN) & 0x1) == 1)
+            printf("BOARD_I2C_INSTANCE: I2C recovery success.\r\n");
+        else
+            printf("BOARD_I2C_INSTANCE Recovery failed, I2C1 SDA still low!!!\n");
+    }
+
+#if (BOARD_I2C_INSTANCE == 1U)
+    /* Configure LPI2C 1 */
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C1_SCL__LPI2C1_SCL, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C1_SCL__LPI2C1_SCL, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C1_SDA__LPI2C1_SDA, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C1_SDA__LPI2C1_SDA, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+#elif (BOARD_I2C_INSTANCE == 2U)
+    /* Configure LPI2C 2 */
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C2_SCL__LPI2C2_SCL, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C2_SCL__LPI2C2_SCL, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+
+    IOMUXC_SetPinMux(IOMUXC_PAD_I2C2_SDA__LPI2C2_SDA, 1U);
+    IOMUXC_SetPinConfig(IOMUXC_PAD_I2C2_SDA__LPI2C2_SDA, IOMUXC_PAD_DSE(0xFU)
+        | IOMUXC_PAD_FSEL1(0x3U) | IOMUXC_PAD_PU(0x1U) | IOMUXC_PAD_OD(0x1U));
+#endif
+
+    rate = (uint32_t) CCM_RootGetRate(clockId);
+
+    LPI2C_MasterGetDefaultConfig(&lpi2cConfig);
+
+    lpi2cConfig.baudRate_Hz = BOARD_I2C_BAUDRATE; //BOARD_I2C_BAUDRATE_GPIO;
+    lpi2cConfig.enableDoze = false;
+
+    LPI2C_MasterInit(base, &lpi2cConfig, rate);
+}
+
 /*--------------------------------------------------------------------------*/
 /* Init serial devices                                                      */
 /*--------------------------------------------------------------------------*/
@@ -96,6 +229,10 @@ int32_t BRD_SM_SerialDevicesInit(void)
 {
     int32_t status = SM_ERR_SUCCESS;
     LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
+
+    BOARD_I2C_Recovery();
+
+#if 0
     pcal6408a_config_t pcal6408Config;
 
     /* Fill in PCAL6408A dev */
@@ -116,6 +253,7 @@ int32_t BRD_SM_SerialDevicesInit(void)
             status = SM_ERR_HARDWARE_ERROR;
         }
     }
+#endif
 
     if (status == SM_ERR_SUCCESS)
     {
@@ -314,11 +452,12 @@ int32_t BRD_SM_BusExpMaskSet(uint8_t val, uint8_t mask)
 void GPIO1_0_IRQHandler(void)
 {
     uint32_t flags;
-    uint8_t status, val;
+    //uint8_t status, val;
 
     /* Get GPIO status */
     flags = RGPIO_GetPinsInterruptFlags(GPIO1, kRGPIO_InterruptOutput0);
 
+#if 0
     /* Get PCAL6408A status */
     (void) PCAL6408A_IntStatusGet(&g_pcal6408aDev, &status);
 
@@ -353,6 +492,15 @@ void GPIO1_0_IRQHandler(void)
 
     /* Handle controls interrupts */
     BRD_SM_ControlHandler(status, val);
+#else
+    /* Clear GPIO interrupts */
+    RGPIO_ClearPinsInterruptFlags(GPIO1, kRGPIO_InterruptOutput0, flags);
+
+    BRD_SM_Pf09Handler();
+
+    if (g_pca2131Used)
+        BRD_SM_BbmHandler();
+#endif
 
     /* Adjust dynamic IRQ priority */
     (void) DEV_SM_IrqPrioUpdate();
