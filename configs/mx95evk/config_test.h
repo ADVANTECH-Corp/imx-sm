@@ -1,7 +1,7 @@
 /*
 ** ###################################################################
 **
-** Copyright 2023-2026 NXP
+** Copyright 2026 NXP
 **
 ** Redistribution and use in source and binary forms, with or without modification,
 ** are permitted provided that the following conditions are met:
@@ -53,9 +53,11 @@
 
 /* Defines */
 
+
 /*--------------------------------------------------------------------------*/
 /* LM0 Test Config (SM)                                                     */
 /*--------------------------------------------------------------------------*/
+
 
 /*--------------------------------------------------------------------------*/
 /* LM1 Test Config (M7)                                                     */
@@ -84,6 +86,7 @@
         .mbDoorbell = 2U, \
         .agentId = 0U, \
     }
+
 
 /*--------------------------------------------------------------------------*/
 /* LM2 Test Config (AP)                                                     */
@@ -121,6 +124,7 @@
         .agentId = 2U, \
     }
 
+
 /*--------------------------------------------------------------------------*/
 /* Test Channel Config                                                      */
 /*--------------------------------------------------------------------------*/
@@ -138,17 +142,17 @@
     SM_TEST_CHN5_CONFIG, \
     SM_TEST_CHN6_CONFIG
 
+
 /*--------------------------------------------------------------------------*/
 /* Test Config                                                              */
 /*--------------------------------------------------------------------------*/
 
 /*! Config for number of tests */
-#define SM_SCMI_NUM_TEST  41U
+#define SM_SCMI_NUM_TEST  36U
 
 /*! Config data array for tests */
 #define SM_SCMI_TEST_CONFIG_DATA \
     {.testId = TEST_BUTTON, .channel = 5U, .rsrc = DEV_SM_BUTTON_0}, \
-    {.testId = TEST_CLK, .channel = 0U, .rsrc = DEV_SM_CLK_LPUART3}, \
     {.testId = TEST_CLK, .channel = 5U, .rsrc = DEV_SM_CLK_ENETREF}, \
     {.testId = TEST_CLK, .channel = 5U, .rsrc = DEV_SM_CLK_ENETTIMER1}, \
     {.testId = TEST_CLK, .channel = 5U, .rsrc = DEV_SM_CLK_GPU_CGC}, \
@@ -157,9 +161,6 @@
     {.testId = TEST_CLK, .channel = 5U, .rsrc = DEV_SM_CLK_SAI1}, \
     {.testId = TEST_CTRL, .channel = 5U, .rsrc = DEV_SM_CTRL_MQS1_SETTINGS}, \
     {.testId = TEST_CTRL, .channel = 5U, .rsrc = DEV_SM_CTRL_SAI1_MCLK}, \
-    {.testId = TEST_DAISY, .channel = 0U, .rsrc = DEV_SM_DAISY_LPUART3_CTS}, \
-    {.testId = TEST_DAISY, .channel = 0U, .rsrc = DEV_SM_DAISY_LPUART3_RXD}, \
-    {.testId = TEST_DAISY, .channel = 0U, .rsrc = DEV_SM_DAISY_LPUART3_TXD}, \
     {.testId = TEST_DAISY, .channel = 5U, .rsrc = DEV_SM_DAISY_NETC_EMDC}, \
     {.testId = TEST_DAISY, .channel = 5U, .rsrc = DEV_SM_DAISY_NETC_EMDIO}, \
     {.testId = TEST_DAISY, .channel = 5U, .rsrc = DEV_SM_DAISY_NETC_ETH0_RMII_RX_ER}, \
@@ -184,7 +185,6 @@
     {.testId = TEST_PERF, .channel = 5U, .rsrc = DEV_SM_PERF_GPU}, \
     {.testId = TEST_PERF, .channel = 5U, .rsrc = DEV_SM_PERF_NPU}, \
     {.testId = TEST_PERF, .channel = 5U, .rsrc = DEV_SM_PERF_VPU}, \
-    {.testId = TEST_PERLPI, .channel = 0U, .rsrc = DEV_SM_PERLPI_LPUART3}, \
     {.testId = TEST_PERLPI, .channel = 5U, .rsrc = DEV_SM_PERLPI_LPUART8}, \
     {.testId = TEST_PIN, .channel = 5U, .rsrc = DEV_SM_PIN_UART1_RXD}, \
     {.testId = TEST_RTC, .channel = 5U, .rsrc = DEV_SM_RTC_BBNSM}

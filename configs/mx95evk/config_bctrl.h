@@ -1,7 +1,7 @@
 /*
 ** ###################################################################
 **
-** Copyright 2023-2026 NXP
+** Copyright 2026 NXP
 **
 ** Redistribution and use in source and binary forms, with or without modification,
 ** are permitted provided that the following conditions are met:
@@ -53,6 +53,7 @@
 
 /* Defines */
 
+
 /*--------------------------------------------------------------------------*/
 /* BCTRL A Config                                                           */
 /*--------------------------------------------------------------------------*/
@@ -61,15 +62,16 @@
 #define SM_BCTRL_A_CONFIG \
     { \
         SM_CFG_W1(0x00000008U), 0x00001804U, \
-        SM_CFG_W1(0x0000000CU), 0x0000E56AU, \
-        SM_CFG_W1(0x00000010U), 0x0000E56AU, \
-        SM_CFG_W1(0x00000014U), 0x0000E56AU, \
-        SM_CFG_W1(0x00000018U), 0x0000E56AU, \
-        SM_CFG_W1(0x0000001CU), 0x0000E56AU, \
-        SM_CFG_W1(0x00000020U), 0x0000E56AU, \
-        SM_CFG_W1(0x00000024U), 0x00000291U, \
+        SM_CFG_W1(0x0000000CU), 0x0000E56BU, \
+        SM_CFG_W1(0x00000010U), 0x0000E56BU, \
+        SM_CFG_W1(0x00000014U), 0x0000E56BU, \
+        SM_CFG_W1(0x00000018U), 0x0000E56BU, \
+        SM_CFG_W1(0x0000001CU), 0x0000E56BU, \
+        SM_CFG_W1(0x00000020U), 0x0000E56BU, \
+        SM_CFG_W1(0x00000024U), 0x00000290U, \
         SM_CFG_END \
     }
+
 
 /*--------------------------------------------------------------------------*/
 /* BCTRL W Config                                                           */
